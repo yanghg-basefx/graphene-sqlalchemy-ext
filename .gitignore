@@ -1,0 +1,6 @@
+*.pyc
+.*.swp
+*~
+.idea
+.nfs*
+docs
