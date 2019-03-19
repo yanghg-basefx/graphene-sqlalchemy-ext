@@ -14,6 +14,25 @@ _ServerEnumCache = {}
 
 
 class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField):
+    """
+    provide session manager and query manager
+    
+    class MySQLConnectionField(SQLAlchemyConnectionFieldExt):
+        @classmethod
+        def session_mapper(cls):
+            return {'default': default_session, 'master': master_session, 'slave': slave_session}
+        
+        @classmethod
+        def server_enum_cls_name(cls):
+            return "MySQLServerEnum"  # to avoid created server enum in each subclass
+        
+        def apply_query_filters(cls, model, query, name=None, **args):
+            query = super()
+            if name is not None:
+                query = query.filter_by(name=name)
+            return query
+    """
+    
     def __init__(self, type, *args, **kwargs):
         from .types import SQLAlchemyObjectTypeExt
         if issubclass(type, graphene.relay.Connection):
@@ -38,6 +57,9 @@ class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField
 
     @classmethod
     def get_query(cls, model, info, server_name=None, **args):
+        """
+        get_query from cls.session_mapper
+        """
         if not server_name:
             _, server_name = cls.server_enum()
         try:
@@ -51,6 +73,9 @@ class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField
 
     @classmethod
     def apply_query_filters(cls, model, query, sort=None, id=None, _id=None, **args):
+        """
+        you could apply new filters by override this method
+        """
         if id is not None and _id is not None:
             raise ValueError('Could not pass id and global id at the same time')
         if id is not None and len(id) > 0:
@@ -90,6 +115,12 @@ class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField
 
     @classmethod
     def connection_from_iterable(cls, iterable, args=None, connection_type=None, edge_type=None, pageinfo_type=None):
+        """
+        resolve connection depends on the iterable type
+        
+        if the iterable type is Query, it will go to connection_from_query, the page operation will be much faster
+        than connection_from_list
+        """
         if isinstance(iterable, Query):
             connection = cls.connection_from_query(iterable, args,
                                                    connection_type=connection_type,
@@ -109,6 +140,10 @@ class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField
     @classmethod
     def connection_from_query(cls, query, args=None,
                               connection_type=None, edge_type=None, pageinfo_type=None):
+        """
+        similar to connection_from_list, but replace some of page operations to database limit...offset...
+        it will be much faster and save more memory
+        """
         connection_type = connection_type or graphene.relay.Connection
         edge_type = edge_type or connection_type.Edge
         pageinfo_type = pageinfo_type or graphene.relay.PageInfo
@@ -205,6 +240,9 @@ class SQLAlchemyConnectionFieldExt(graphene_sqlalchemy.SQLAlchemyConnectionField
 
     @classmethod
     def server_enum(cls):
+        """
+        generate server enum from cls.session_mapper, so users can choose which server they want to connect to
+        """
         enum_cls_name = cls.server_enum_cls_name()
         if enum_cls_name not in _ServerEnumCache:
             server_names = list(cls.session_mapper().keys())
