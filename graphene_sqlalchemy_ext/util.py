@@ -16,14 +16,43 @@ __all__ = ['empty_resolver', 'create_connection_field', 'create_index_field']
 
 
 def empty_resolver(*args):
+    """
+    empty resolver that you can use it for a field which is only a container
+    
+    class Container:
+        field1 = graphene.String()
+        field2 = graphene.Int()
+        
+        def resolve_field1(*args):
+            return "Hello Wrold!"
+        
+        def resolve_field2(*args):
+            return 233
+    
+    class Query:
+        container = graphene.Field(Container, resolver=empty_resolver)
+    """
     return args
 
 
 def create_connection_field(_type, *args, **kwargs):
+    """
+    create connection field which defined by _type._ConnectionFieldClass. 
+    normally _type is a subclass of SQLAlchemyObjectTypeExt.
+    
+    class Node(SQLAlchemyObjectTypeExt):
+        _ConnectionFieldClass = SQLAlchemyConnectionFieldExt
+    
+    class Query:
+        nodes = create_connection_field(Node)
+    """
     return _get_connection_field_class(_type)(_type, *args, **kwargs)
 
 
 def create_index_field(_type, *args, **kwargs):
+    """
+    provide server_enum argument. normally it should only be used at root level.
+    """
     connection_field_class = _get_connection_field_class(_type)
     if issubclass(connection_field_class, SQLAlchemyConnectionFieldExt):
         kwargs.setdefault('server_name', connection_field_class.server_enum_argument())
@@ -31,6 +60,9 @@ def create_index_field(_type, *args, **kwargs):
 
 
 def construct_fields(node_name, model, registry=None, only_fields=(), exclude_fields=()):
+    """
+    a new constructor for declared_hybrid_property
+    """
     inspected_model = inspect(model)
     fields = OrderedDict()
     for hybrid_item in inspected_model.all_orm_descriptors:
