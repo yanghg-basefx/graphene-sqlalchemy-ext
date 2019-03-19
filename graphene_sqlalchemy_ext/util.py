@@ -80,12 +80,12 @@ def construct_fields(node_name, model, registry=None, only_fields=(), exclude_fi
 def _construct_dynamic_type(model, node_name, name, hybrid_item, registry=None):
     def dynamic_type():
         getattr(model, name)
-        return _convert_bfx_declared_hybrid_property(node_name + name, hybrid_item, registry)
+        return _convert_declared_hybrid_property(node_name + name, hybrid_item, registry)
 
     return Dynamic(dynamic_type)
 
 
-def _convert_bfx_declared_hybrid_property(field_name, hybrid_item, registry=None):
+def _convert_declared_hybrid_property(field_name, hybrid_item, registry=None):
     typ = hybrid_item._declared_return_type
     if isinstance(typ, Column):
         return convert_sqlalchemy_column(typ, registry)
