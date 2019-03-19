@@ -10,6 +10,12 @@ __all__ = ['SQLAlchemyObjectTypeExt']
 
 
 class SQLAlchemyObjectTypeExt(graphene_sqlalchemy.SQLAlchemyObjectType):
+    """
+    provide support for declared_hybrid_property and _ConnectionFieldClass
+    
+    you could use sort argument in subquery without any change
+    """
+    
     _ConnectionFieldClass = SQLAlchemyConnectionFieldExt
 
     @classmethod
